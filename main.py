@@ -44,7 +44,7 @@ class Border(pygame.sprite.Sprite):
 
 
 class Wall(pygame.sprite.Sprite):
-    def __init__(self, pos, size):
+    def __init__(self, pos, size, add_b=[]):
         super().__init__(all_sprites)
         self.add(walls)
 
@@ -53,6 +53,11 @@ class Wall(pygame.sprite.Sprite):
         if a > b:
             Border(x, y, x + a, y, TYPE_BORD['up'])
             Border(x, y + b, x + a, y + b, ['down'])
+            for e in add_b:
+                if e == TYPE_BORD['left']:
+                    Border(x, y, x, y + b, TYPE_BORD['left'])
+                elif e == TYPE_BORD['right']:
+                    Border(x + a, y, x + a, y + b, TYPE_BORD['right'])
         else:
             Border(x, y, x, y + b, TYPE_BORD['left'])
             Border(x + a, y, x + a, y + b, TYPE_BORD['right'])
@@ -191,19 +196,18 @@ class Water(pygame.sprite.Sprite):
     def update(self):
         if pygame.key.get_pressed()[pygame.K_d] and not \
                 (pygame.sprite.spritecollideany(self, v_borders) and
-                 pygame.sprite.spritecollideany(self, v_borders).rect.x >= self.rect.x):
+                 pygame.sprite.spritecollideany(self, v_borders).t == TYPE_BORD['left']):
             self.rect = self.rect.move(TILE_SIZE / 25, 0)
 
         if pygame.key.get_pressed()[pygame.K_a] and not \
                 (pygame.sprite.spritecollideany(self, v_borders) and
-                 pygame.sprite.spritecollideany(self, v_borders).rect.x <= self.rect.x):
+                 pygame.sprite.spritecollideany(self, v_borders).t == TYPE_BORD['right']):
             self.rect = self.rect.move(-TILE_SIZE / 25, 0)
-
 
         if not pygame.sprite.spritecollideany(self, g_borders):
             if self.on_fly is None:
                 self.rect = self.rect.move(0, TILE_SIZE / 20)
-        elif pygame.sprite.spritecollideany(self, g_borders).rect.y <= self.rect.y and self.on_fly is None:
+        elif pygame.sprite.spritecollideany(self, g_borders).t != TYPE_BORD['up'] and self.on_fly is None:
             self.rect = self.rect.move(0, TILE_SIZE / 20)
         '''
                 else:
@@ -212,11 +216,11 @@ class Water(pygame.sprite.Sprite):
         '''
 
         if self.on_fly is None and pygame.key.get_pressed()[pygame.K_w] and pygame.sprite.spritecollideany(self, g_borders) and \
-            True:
+            pygame.sprite.spritecollideany(self, g_borders).t == TYPE_BORD['up']:
             self.rect = self.rect.move(0, -TILE_SIZE / 20)
             self.on_fly = TILE_SIZE / 20
         elif self.on_fly is not None:
-            if self.on_fly >= TILE_SIZE:
+            if self.on_fly >= TILE_SIZE * (1 + WALL_PER + 0.05):
                 self.on_fly = None
             else:
                 if not pygame.sprite.spritecollideany(self, g_borders):
@@ -224,6 +228,7 @@ class Water(pygame.sprite.Sprite):
                     self.on_fly += TILE_SIZE / 20
                 else:
                     self.on_fly = None
+
 
 
 
@@ -264,8 +269,13 @@ def load_level(filename):
 
             for j in range(2, width + 2):
                 if level[n + 1][j] == SIGNS['wall']:
+                    a = []
+                    if j + 1 < width + 2 and level[n + 1][j + 1] == SIGNS['free']:
+                        a.append(TYPE_BORD['right'])
+                    if j - 1 > 1 and level[n + 1][j - 1] == SIGNS['free']:
+                        a.append(TYPE_BORD['left'])
                     Wall((SIZES['v_wall'][0] + (j - 2) * TILE_SIZE,
-                          SIZES['g_wall'][1] + (i * 2 + q + 1) * TILE_SIZE), SIZES['g_wall'])
+                          SIZES['g_wall'][1] + (i * 2 + q + 1) * TILE_SIZE), SIZES['g_wall'], a)
                 elif level[n + 1][j] == SIGNS['fire_lake']:
                     FireLake((SIZES['v_wall'][0] + (j - 2) * TILE_SIZE,
                               SIZES['g_wall'][1] + (i * 2 + q + 1) * TILE_SIZE), SIZES['fire_lake'])
