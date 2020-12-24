@@ -6,9 +6,9 @@ BUTTON_PLACE = 50
 FPS = 40
 MAP_DIR = 'levels'
 IMAGE_DIR = 'images'
+TILE_SIZE = None
 
 WALL_PER = 0.2
-HERO_PER = 2 / 3
 
 SIGNS = {'free': ' ', 'dynamic_stone': 'b', 'static_stone': 'B', 'fire_lake': 'f', 'water_lake': 'w',
          'fire': 'F', 'water': 'W', 'water_door': '$', 'fire_door': '#', 'wall': '-'}
@@ -29,7 +29,10 @@ SIZES = {'dynamic_stone': None, 'static_stone': None,
 class Border(pygame.sprite.Sprite):
     def __init__(self, pos, size):
         super().__init__(all_sprites)
-        self.add(borders)
+        if size[0] > size[1]:
+            self.add(g_borders)
+        else:
+            self.add(v_borders)
         self.image = pygame.Surface(size,
                                     pygame.SRCALPHA, 32)
         pygame.draw.rect(self.image, COLORS['wall'], (0, 0, *size))
@@ -41,6 +44,8 @@ class StaticStone(pygame.sprite.Sprite):
     def __init__(self, pos, size):
         super().__init__(all_sprites)
         self.add(static_stones)
+        self.add(v_borders)
+        self.add(g_borders)
         self.image = pygame.Surface(size,
                                     pygame.SRCALPHA, 32)
         pygame.draw.rect(self.image, COLORS['static_stone'], (0, 0, *size))
@@ -52,6 +57,7 @@ class FireLake(pygame.sprite.Sprite):
     def __init__(self, pos, size):
         super().__init__(all_sprites)
         self.add(fire_lakes)
+        self.add(g_borders)
         self.image = pygame.Surface(size,
                                     pygame.SRCALPHA, 32)
         pygame.draw.rect(self.image, COLORS['wall'], (0, 0, *size))
@@ -63,6 +69,7 @@ class WaterLake(pygame.sprite.Sprite):
     def __init__(self, pos, size):
         super().__init__(all_sprites)
         self.add(water_lakes)
+        self.add(g_borders)
         self.image = pygame.Surface(size,
                                     pygame.SRCALPHA, 32)
         pygame.draw.rect(self.image, COLORS['wall'], (0, 0, *size))
@@ -102,6 +109,7 @@ class DynamicStone(pygame.sprite.Sprite):
     def __init__(self, pos, size):
         super().__init__(all_sprites)
         self.add(dynamic_stones)
+        self.add(g_borders)
         self.image = pygame.Surface(size,
                                     pygame.SRCALPHA, 32)
         pygame.draw.rect(self.image, COLORS['dynamic_stone'], (0, 0, *size))
@@ -122,7 +130,22 @@ class Fire(pygame.sprite.Sprite):
         self.rect = pygame.Rect(*pos, *size)
 
     def update(self):
-        pass
+        if pygame.key.get_pressed()[pygame.K_RIGHT] and not \
+                (pygame.sprite.spritecollideany(self, v_borders) and
+                 pygame.sprite.spritecollideany(self, v_borders).rect.x >= self.rect.x):
+            self.rect = self.rect.move(TILE_SIZE / 25, 0)
+        elif pygame.key.get_pressed()[pygame.K_LEFT] and not (
+                pygame.sprite.spritecollideany(self, v_borders) and
+                pygame.sprite.spritecollideany(self, v_borders).rect.x <= self.rect.x):
+            self.rect = self.rect.move(-TILE_SIZE / 25, 0)
+
+        if not pygame.sprite.spritecollideany(self, g_borders):
+            self.rect = self.rect.move(0, TILE_SIZE / 20)
+        elif pygame.sprite.spritecollideany(self, g_borders).rect.y <= self.rect.y:
+            self.rect = self.rect.move(0, TILE_SIZE / 20)
+        else:
+            b = pygame.sprite.spritecollideany(self, g_borders)
+            self.rect = self.rect.move(0, b.rect.y - self.rect.y - self.rect.height + 1)
 
 
 class Water(pygame.sprite.Sprite):
@@ -133,9 +156,43 @@ class Water(pygame.sprite.Sprite):
         pygame.draw.ellipse(self.image, COLORS['water'], (0, 0, *size))
         pygame.draw.ellipse(self.image, (0, 0, 0), (0, 0, *size), 1)
         self.rect = pygame.Rect(*pos, *size)
+        self.on_fly = None
 
     def update(self):
-        pass
+        if pygame.key.get_pressed()[pygame.K_d] and not \
+                (pygame.sprite.spritecollideany(self, v_borders) and
+                 pygame.sprite.spritecollideany(self, v_borders).rect.x >= self.rect.x):
+            self.rect = self.rect.move(TILE_SIZE / 25, 0)
+        elif pygame.key.get_pressed()[pygame.K_a] and not \
+                (pygame.sprite.spritecollideany(self, v_borders) and
+                 pygame.sprite.spritecollideany(self, v_borders).rect.x <= self.rect.x):
+            self.rect = self.rect.move(-TILE_SIZE / 25, 0)
+
+        if not pygame.sprite.spritecollideany(self, g_borders):
+            if self.on_fly is None:
+                self.rect = self.rect.move(0, TILE_SIZE / 20)
+        elif pygame.sprite.spritecollideany(self, g_borders).rect.y <= self.rect.y and self.on_fly is None:
+            self.rect = self.rect.move(0, TILE_SIZE / 20)
+        '''
+                else:
+            b = pygame.sprite.spritecollideany(self, g_borders)
+            self.rect = self.rect.move(0, b.rect.y - self.rect.y - self.rect.height + 1)
+        '''
+
+        if self.on_fly is None and pygame.key.get_pressed()[pygame.K_w] and pygame.sprite.spritecollideany(self, g_borders) and \
+            True:
+            self.rect = self.rect.move(0, -TILE_SIZE / 20)
+            self.on_fly = TILE_SIZE / 20
+        elif self.on_fly is not None:
+            if self.on_fly >= TILE_SIZE:
+                self.on_fly = None
+            else:
+                if not pygame.sprite.spritecollideany(self, g_borders):
+                    self.rect = self.rect.move(0, -TILE_SIZE / 20)
+                    self.on_fly += TILE_SIZE / 20
+                else:
+                    self.on_fly = None
+
 
 
 def load_level(filename):
@@ -195,32 +252,34 @@ def load_level(filename):
                               SIZES['water_door'])
                 elif level[n][j] == SIGNS['static_stone']:
                     StaticStone((SIZES['v_wall'][0] + (j - 2) * TILE_SIZE + (TILE_SIZE - SIZES['static_stone'][0]) / 2,
-                                 SIZES['g_wall'][1] + (i * 2 + q) * TILE_SIZE + TILE_SIZE - SIZES['static_stone'][1]),
+                                 SIZES['g_wall'][1] + (i * 2 + q) * TILE_SIZE + TILE_SIZE - SIZES['static_stone'][
+                                     1] + 2),
                                 SIZES['static_stone'])
                 elif level[n][j] == SIGNS['dynamic_stone']:
                     DynamicStone(
                         (SIZES['v_wall'][0] + (j - 2) * TILE_SIZE + (TILE_SIZE - SIZES['dynamic_stone'][0]) / 2,
-                         SIZES['g_wall'][1] + (i * 2 + q) * TILE_SIZE + TILE_SIZE - SIZES['dynamic_stone'][1]),
+                         SIZES['g_wall'][1] + (i * 2 + q) * TILE_SIZE + TILE_SIZE - SIZES['dynamic_stone'][1] + 2),
                         SIZES['dynamic_stone'])
                 elif level[n][j] == SIGNS['fire']:
                     fire = Fire((SIZES['v_wall'][0] + (j - 2) * TILE_SIZE + (TILE_SIZE - SIZES['fire'][0]) / 2,
-                                 SIZES['g_wall'][1] + (i * 2 + q) * TILE_SIZE + TILE_SIZE - SIZES['fire'][1]),
+                                 SIZES['g_wall'][1] + (i * 2 + q) * TILE_SIZE + TILE_SIZE - SIZES['fire'][1] + 2),
                                 SIZES['fire'])
                 elif level[n][j] == SIGNS['water']:
                     water = Water((SIZES['v_wall'][0] + (j - 2) * TILE_SIZE + (TILE_SIZE - SIZES['water'][0]) / 2,
-                                   SIZES['g_wall'][1] + (i * 2 + q) * TILE_SIZE + TILE_SIZE - SIZES['water'][1]),
+                                   SIZES['g_wall'][1] + (i * 2 + q) * TILE_SIZE + TILE_SIZE - SIZES['water'][1] - 100),
                                   SIZES['water'])
 
 
 def main():
-    global all_sprites, borders, static_stones, dynamic_stones, fire_lakes, water_lakes, fire_doors, water_doors
+    global all_sprites, v_borders, g_borders, static_stones, dynamic_stones, fire_lakes, water_lakes, fire_doors, water_doors
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_SIZE[0], WINDOW_SIZE[1] + BUTTON_PLACE))
     clock = pygame.time.Clock()
     screen.fill((150, 150, 150))
 
     all_sprites = pygame.sprite.Group()
-    borders = pygame.sprite.Group()
+    v_borders = pygame.sprite.Group()
+    g_borders = pygame.sprite.Group()
     static_stones = pygame.sprite.Group()
     dynamic_stones = pygame.sprite.Group()
     fire_lakes = pygame.sprite.Group()
