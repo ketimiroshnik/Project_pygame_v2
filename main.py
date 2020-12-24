@@ -194,10 +194,13 @@ class Water(pygame.sprite.Sprite):
         self.on_fly = None
 
     def update(self):
-        if pygame.key.get_pressed()[pygame.K_d] and not \
-                (pygame.sprite.spritecollideany(self, v_borders) and
+        if pygame.key.get_pressed()[pygame.K_d]:
+            if not (pygame.sprite.spritecollideany(self, v_borders) and
                  pygame.sprite.spritecollideany(self, v_borders).t == TYPE_BORD['left']):
-            self.rect = self.rect.move(TILE_SIZE / 25, 0)
+                self.rect = self.rect.move(TILE_SIZE / 25, 0)
+            elif pygame.sprite.spritecollideany(self, v_borders) and pygame.sprite.spritecollideany(self, g_borders) and \
+                    pygame.sprite.spritecollideany(self, v_borders).rect.y <= pygame.sprite.spritecollideany(self, g_borders).rect.y:
+                self.rect = self.rect.move(TILE_SIZE / 25, 0)
 
         if pygame.key.get_pressed()[pygame.K_a] and not \
                 (pygame.sprite.spritecollideany(self, v_borders) and
@@ -209,11 +212,6 @@ class Water(pygame.sprite.Sprite):
                 self.rect = self.rect.move(0, TILE_SIZE / 20)
         elif pygame.sprite.spritecollideany(self, g_borders).t != TYPE_BORD['up'] and self.on_fly is None:
             self.rect = self.rect.move(0, TILE_SIZE / 20)
-        '''
-                else:
-            b = pygame.sprite.spritecollideany(self, g_borders)
-            self.rect = self.rect.move(0, b.rect.y - self.rect.y - self.rect.height + 1)
-        '''
 
         if self.on_fly is None and pygame.key.get_pressed()[pygame.K_w] and pygame.sprite.spritecollideany(self, g_borders) and \
             pygame.sprite.spritecollideany(self, g_borders).t == TYPE_BORD['up']:
@@ -228,8 +226,6 @@ class Water(pygame.sprite.Sprite):
                     self.on_fly += TILE_SIZE / 20
                 else:
                     self.on_fly = None
-
-
 
 
 def load_level(filename):
