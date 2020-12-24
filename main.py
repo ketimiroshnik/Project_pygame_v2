@@ -25,7 +25,7 @@ SIZES = {'dynamic_stone': None, 'static_stone': None,
          'water_door': None, 'fire_door': None,
          'g_wall': None, 'v_wall': None}
 
-TYPE_BORD = {'left': 1, 'right': 2, 'up':3, 'bottom': 4}
+TYPE_BORD = {'left': 1, 'right': 2, 'up': 3, 'bottom': 4}
 
 
 class Border(pygame.sprite.Sprite):
@@ -40,7 +40,6 @@ class Border(pygame.sprite.Sprite):
             self.add(g_borders)
             self.image = pygame.Surface([x2 - x1, 1])
             self.rect = pygame.Rect(x1, y1, x2 - x1, 5)
-
 
 
 class Wall(pygame.sprite.Sprite):
@@ -194,13 +193,10 @@ class Water(pygame.sprite.Sprite):
         self.on_fly = None
 
     def update(self):
-        if pygame.key.get_pressed()[pygame.K_d]:
-            if not (pygame.sprite.spritecollideany(self, v_borders) and
-                 pygame.sprite.spritecollideany(self, v_borders).t == TYPE_BORD['left']):
-                self.rect = self.rect.move(TILE_SIZE / 25, 0)
-            elif pygame.sprite.spritecollideany(self, v_borders) and pygame.sprite.spritecollideany(self, g_borders) and \
-                    pygame.sprite.spritecollideany(self, v_borders).rect.y <= pygame.sprite.spritecollideany(self, g_borders).rect.y:
-                self.rect = self.rect.move(TILE_SIZE / 25, 0)
+        if pygame.key.get_pressed()[pygame.K_d] and not (
+                pygame.sprite.spritecollideany(self, v_borders) and pygame.sprite.spritecollideany(self, v_borders).t ==
+                TYPE_BORD['left']):
+            self.rect = self.rect.move(TILE_SIZE / 25, 0)
 
         if pygame.key.get_pressed()[pygame.K_a] and not \
                 (pygame.sprite.spritecollideany(self, v_borders) and
@@ -213,8 +209,9 @@ class Water(pygame.sprite.Sprite):
         elif pygame.sprite.spritecollideany(self, g_borders).t != TYPE_BORD['up'] and self.on_fly is None:
             self.rect = self.rect.move(0, TILE_SIZE / 20)
 
-        if self.on_fly is None and pygame.key.get_pressed()[pygame.K_w] and pygame.sprite.spritecollideany(self, g_borders) and \
-            pygame.sprite.spritecollideany(self, g_borders).t == TYPE_BORD['up']:
+        if self.on_fly is None and pygame.key.get_pressed()[pygame.K_w] and pygame.sprite.spritecollideany(self,
+                                                                                                           g_borders) and \
+                pygame.sprite.spritecollideany(self, g_borders).t == TYPE_BORD['up']:
             self.rect = self.rect.move(0, -TILE_SIZE / 20)
             self.on_fly = TILE_SIZE / 20
         elif self.on_fly is not None:
